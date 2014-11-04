@@ -44,6 +44,41 @@ module Ankusa
       th
     end
 
+    def hash_train(klass, word_hashs, total_doc_count)
+      # th = TextHash.new(text)
+      th = word_hashs
+      th.each do |word, count|
+        @storage.incr_word_count klass, word, count
+        yield word, count if block_given?
+      end
+      # @storage.incr_total_word_count klass, th.word_count
+      @storage.incr_total_word_count klass, th.count
+      # doccount = (text.kind_of? Array) ? text.length : 1
+      # @storage.incr_doc_count klass, doccount
+      @storage.incr_doc_count klass, total_doc_count
+      @classnames << klass unless @classnames.include? klass
+      # cache is now dirty of these vars
+      @doc_count_totals = nil
+      @vocab_sizes = nil
+      th
+    end
+
+    def hash_untrain(klass, word_hashs, total_doc_count)
+      # th = TextHash.new(text)
+      th = word_hashs
+      th.each do |word, count|
+        @storage.incr_word_count klass, word, -count
+        yield word, count if block_given?
+      end
+      @storage.incr_total_word_count klass, -th.count
+      # doccount = (text.kind_of? Array) ? text.length : 1
+      @storage.incr_doc_count klass, -total_doc_count
+      # cache is now dirty of these vars
+      @doc_count_totals = nil
+      @vocab_sizes = nil
+      th
+    end
+
     protected
     def get_word_probs(word, classnames)
       probs = Hash.new 0
